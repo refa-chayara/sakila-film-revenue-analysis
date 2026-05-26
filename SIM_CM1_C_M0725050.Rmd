@@ -1,0 +1,323 @@
+---
+title: ""
+author: "Rafeyfa Chayara Alima"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<style>
+.judul {
+  text-align: center;
+  font-family: "Times New Roman";
+  font-size: 42px;
+  font-weight: bold;
+  line-height: 1;
+  margin-top: 30px;
+}
+
+.subjudul {
+  font-family: "Times New Roman";
+  font-size: 38px;
+  color: blue;
+  font-weight: bold;
+  line-height: 1.3;
+  margin-top: 20px;
+
+}
+ .subjudul2 {
+  font-family: "Times New Roman";
+  font-size: 30px;
+  color: bold;
+  font-weight: bold;
+  line-height: 1.3;
+  margin-top: 20px;
+  
+}
+  
+.subjudul3 {
+  text-align: center;
+  font-family: "Times New Roman";
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 1;
+  margin-top: 30px;
+}
+</style>
+
+<div class = "judul">
+ANALISIS HUBUNGAN FREKUENSI PENYEWAAN DAN REVENUE FILM PADA DATABASE SAKILA
+</div>
+<div class = "subjudul3">
+Rafeyfa Chayara Alima-M0725050
+</div>
+
+<div class = "subjudul">
+Pendahuluan
+</div>
+Industri penyewaan film merupakan salah satu bentuk layanan hiburan yang mengandalkan pemahaman terhadap preferensi pelanggan untuk meningkatkan pendapatan. Dalam operasionalnya, perusahaan perlu mengetahui film-film yang paling diminati pelanggan serta kontribusinya terhadap pendapatan yang dihasilkan. Informasi tersebut dapat digunakan untuk mengevaluasi kinerja katalog film, mengoptimalkan strategi pemasaran, dan mendukung pengambilan keputusan yang lebih efektif dalam pengelolaan inventaris film.
+
+Data transaksi merupakan sumber informasi yang penting dalam memahami perilaku pelanggan dan mengevaluasi kinerja bisnis. Data transaksi dapat digunakan untuk mengetahui film yang paling diminati pelanggan serta kontribusinya terhadap pendapatan perusahaan. Salah satu cara untuk memperoleh informasi tersebut adalah melalui analisis statistik. Dengan menggunakan analisis statistik, hubungan antara tingkat popularitas film dan pendapatan yang dihasilkan dapat dipelajari secara lebih objektif. Popularitas film dapat diukur melalui frekuensi penyewaan, sedangkan kinerja finansial dapat dilihat dari revenue yang diperoleh.
+
+Laporan ini bertujuan untuk menganalisis hubungan antara frekuensi penyewaan film dan revenue pada database Sakila menggunakan eksplorasi data, visualisasi, korelasi Pearson, dan regresi linear sederhana. Hasil analisis diharapkan dapat memberikan insight mengenai pengaruh popularitas film terhadap pendapatan yang dihasilkan.
+
+<div class = "subjudul">
+Database Sakila
+</div>
+
+Insight yang diambil dalam analisis ini adalah "Analisis Hubungan Frekuensi Penyewaan dan Revenue Film pada Database Sakila". Variabel yang digunakan meliputi Revenue sebagai variabel dependen yang merepresentasikan total pendapatan film dan Rental Count sebagai variabel independen yang menunjukkan frekuensi penyewaan film. Selain itu, Title digunakan sebagai variabel identifikasi untuk membedakan masing-masing film. Variabel film_id digunakan sebagai identitas unik setiap film dalam database. Analisis difokuskan pada hubungan antara frekuensi penyewaan dan revenue untuk mengetahui apakah film yang lebih sering disewa cenderung menghasilkan pendapatan yang lebih tinggi.
+
+<div class = "subjudul">
+Tujuan Analisis
+</div>
+
+1. Menghitung frekuensi penyewaan setiap film
+2. Menghitung revenue yang dihasilkan setiap film
+3. Menganalisis hubungan antara frekuensi penyewaan dan revenue
+4. Menentukan apakah hubungan tersebut signifikan secara statistik
+
+<div class = "subjudul">
+Deskripsi Data
+</div>
+
+Data diperoleh dari database Sakila menggunakan query SQL berikut:
+
+```sql
+SELECT
+    f.film_id,
+    f.title,
+    COUNT(r.rental_id) AS rental_count,
+    SUM(p.amount) AS revenue
+FROM film f
+JOIN inventory i
+    ON f.film_id = i.film_id
+JOIN rental r
+    ON i.inventory_id = r.inventory_id
+JOIN payment p
+    ON r.rental_id = p.rental_id
+GROUP BY f.film_id, f.title
+ORDER BY rental_count DESC;
+```
+<div class = "subjudul">
+Import Data
+</div>
+
+```{r}
+data <- read.csv("~/film_revenue.csv")
+```
+
+<div class = "subjudul">
+Random Sampling
+</div>
+
+Dataset yang digunakan dalam analisis ini memiliki 300 observasi yang diambil dari Database Sakila melalui metode random sampling.
+```{r}
+set.seed(123)
+data_sakila <- data[sample(nrow(data), 300),]
+View(data_sakila)
+```
+
+<div class = "subjudul">
+Eksplorasi Data
+</div>
+Eksplorasi data dilakukan untuk memahami struktur dan karakteristik dataset yang digunakan dalam analisis. Fungsi summary(), str(), dan dim() digunakan untuk memperoleh gambaran umum data, sedangkan head() dan View() digunakan untuk melihat contoh isi data.
+
+```{r}
+summary(data$rental_count)
+summary(data$revenue)
+summary(data_sakila)
+str(data_sakila)
+dim(data_sakila)
+head(data_sakila)
+View(data_sakila)
+```
+
+<div class = "subjudul">
+Key Performance Indicators
+</div>
+Untuk memperoleh gambaran umum mengenai performa film pada database Sakila, dilakukan perhitungan beberapa indikator utama yang terdiri atas total revenue, rata-rata revenue per film, rata-rata frekuensi penyewaan, dan jumlah film yang dianalisis.
+
+```{r}
+total_revenue <- sum(data_sakila$revenue)
+avg_revenue <- mean(data_sakila$revenue)
+avg_rental <- mean(data_sakila$rental_count)
+jumlah_film <- nrow(data_sakila)
+
+kpi <- data.frame(
+  Indikator = c(
+    "Total Revenue",
+    "Rata-rata Revenue",
+    "Rata-rata Rental",
+    "Jumlah Film"
+  ),
+  Nilai = c(
+    total_revenue,
+    avg_revenue,
+    avg_rental,
+    jumlah_film
+  )
+)
+
+kpi
+```
+Berdasarkan hasil perhitungan KPI, terdapat 300 film yang menjadi objek analisis. Seluruh film menghasilkan total revenue sebesar 20.940,77 yang menunjukkan akumulasi pendapatan yang diperoleh dari aktivitas penyewaan film. Rata-rata revenue yang dihasilkan setiap sebesar 69,80, sedangkan rata-rata frekuensi penyewaan mencapai 16,72 kali per film. Nilai ini menunjukkan bahwa secara umum setiap film mengalami tingkat penyewaan yang cukup tinggi dan mampu memberikan kontribusi pendapatan yang relatif merata.
+
+Hasil KPI ini memberikan gambaran awal bahwa aktivitas penyewaan film pada database Sakila cukup aktif. Namun, masih diperlukan analisis lebih lanjut untuk mengetahui apakah film yang memiliki frekuensi penyewaan tinggi juga cenderung menghasilkan revenue yang lebih besar.
+
+<div class = "subjudul">
+Visualisasi
+</div>
+<div class = "subjudul2">
+Top 10 Film dengan Frekuensi Penyewaan Tertinggi
+</div>
+```{r}
+library(tidyverse)
+library(ggplot2)
+
+top10 <- data_sakila %>%
+  arrange(desc(rental_count)) %>%
+  head(10)
+
+ggplot(top10,
+       aes(x = reorder(title, rental_count),
+           y = rental_count)) +
+  geom_col(fill = "steelblue") +
+  geom_text(
+    aes(label = round(revenue, 2)),
+    hjust = -0.1,
+    size = 3) +
+  coord_flip() +
+  labs(
+    title = "Top 10 Film dengan Frekuensi Penyewaan Tertinggi",
+    x = "Judul Film",
+    y = "Jumlah Penyewaan") +
+  theme_minimal()
+```
+
+Grafik menunjukkan 10 film dengan frekuensi penyewaan tertinggi pada database Sakila. Terlihat bahwa terdapat perbedaan jumlah penyewaan antar film yang menunjukkan bahwa tingkat popularitas film tidak tersebar secara merata. Beberapa film memiliki frekuensi penyewaan yang lebih tinggi dibandingkan film lainnya. Film Massacre Usual merupakan film dengen frekuensi penyewaan tertinggi sehingga dapat disimpulkan sebagai film yang paling diminati oleh pelanggan.
+
+Tingginya frekuensi penyewaan menunjukkan adanya minat pelanggan yang besar terhadap film-film tersebut. Informasi ini memberikan gambaran awal mengenai preferensi pelanggan dan dapat digunakan untuk mengidentifikasi film yang memiliki potensi kontribusi besar terhadap pendapatan. Namun, diperlukan analisis lebih lanjut untuk mengetahui apakah film yang paling sering disewa juga menghasilkan revenue yang lebih tinggi.
+
+<div class = "subjudul2">
+Top 10 Film dengan Revenue Tertinggi
+</div>
+```{r}
+top10 <- data_sakila %>%
+  arrange(desc(revenue)) %>%
+  head(10)
+
+ggplot(top10,
+       aes(x = reorder(title, revenue),
+           y = revenue)) +
+  geom_col(fill = "maroon") +
+  geom_text(
+    aes(label = round(revenue, 2)),
+    hjust = -0.1,
+    size = 3) +
+  coord_flip() +
+  labs(
+    title = "Top 10 Film dengan Revenue Tertinggi",
+    x = "Judul Film",
+    y = "Revenue") +
+  theme_minimal()
+```
+
+Grafik menunjukkan 10 film dengan revenue tertinggi pada database Sakila. Terlihat bahwa terdapat perbedaan pendapatan yang dihasilkan oleh masing-masing film. Film Saturday Lambs merupakan film yang memberikan pendapatan paling tinggi dibandingkan film lainnya. Hasil ini menunjukkan bahwa kemampuan suatu film dalam menghasilkan revenue tidak hanya ditentukan oleh keberadaannya dalam katalog, tetapi juga oleh tingkat permintaan pelanggan terhadap film tersebut. Dengan membandingkan visualisasi ini dengan grafik frekuensi penyewaan sebelumnya, dapat diperoleh gambaran awal mengenai apakah film yang paling sering disewa juga menjadi film dengan revenue tertinggi.
+
+<div class = "subjudul2">
+Scatter Plot Hubungan Frekuensi Penyewaan dan Revenue
+</div>
+```{r}
+ggplot(data_sakila,
+       aes(x = rental_count,
+           y = revenue)) +
+  geom_point(color = "darkgreen", alpha = 0.7) +
+  geom_smooth(method = "lm",
+              se = TRUE,
+              color = "brown") +
+  labs(
+    title = "Hubungan Frekuensi Penyewaan dan Revenue",
+    x = "Frekuensi Penyewaan",
+    y = "Revenue") +
+  theme_minimal()
+```
+
+Scatter plot menunjukkan hubungan antara frekuensi penyewaan dan revenue yang dihasilkan oleh setiap film. Setiap titik merepresentasikan satu film, dengan sumbu horizontal menunjukkan jumlah penyewaan dan sumbu vertikal menunjukkan revenue yang diperoleh. Secara visual terlihat adanya kecenderungan hubungan positif antara kedua variabel. Hal ini ditunjukkan oleh pola titik yang cenderung meningkat seiring bertambahnya frekuensi penyewaan serta garis regresi yang memiliki arah naik. Dengan demikian, film yang lebih sering disewa cenderung menghasilkan revenue yang lebih tinggi.
+
+<div class = "subjudul">
+Analisis Data
+</div>
+<div class = "subjudul2">
+Analisis Korelasi Pearson
+</div>
+Korelasi Pearson digunakan untuk mengukur kekuatan dan arah hubungan linear antara dua variabel numerik, yaitu frekuensi penyewaan film dan revenue.
+Rumus koefisien korelasi Pearson:
+$$
+r=
+\frac{\sum_{i=1}^{n}(x_i-\bar{x})(y_i-\bar{y})}
+{\sqrt{\sum_{i=1}^{n}(x_i-\bar{x})^2}
+\sqrt{\sum_{i=1}^{n}(y_i-\bar{y})^2}}
+$$
+
+<div class = "subjudul2">
+Hipotesis
+</div>
+$$
+H_0:\rho = 0
+$$
+Tidak terdapat hubungan antara frekuensi penyewaan dan revenue.
+
+$$
+H_1:\rho \neq 0
+$$
+Terdapat hubungan antara frekuensi penyewaan dan revenue.
+
+```{r}
+cor.test(
+data_sakila$rental_count,
+data_sakila$revenue)
+```
+Berdasarkan hasil uji korelasi Pearson, diperoleh nilai koefisien korelasi sebesar 0,661 yang menunjukkan adanya hubungan positif antara frekuensi penyewaan dan revenue. Artinya, film yang lebih sering disewa cenderung menghasilkan revenue yang lebih tinggi. Selain itu, diperoleh nilai p-value < 0,05 sehingga H0 ditolak. Dengan demikian, terdapat hubungan yang signifikan antara frekuensi penyewaan dan revenue pada film.
+
+<div class = "subjudul2">
+Regresi Linear
+</div>
+Regresi linear sederhana digunakan untuk mengetahui pengaruh variabel independen terhadap variabel dependen. Pada analisis ini, Rental Count digunakan sebagai variabel independen, sedangkan Revenue digunakan sebagai variabel dependen.
+
+$$
+Revenue = \beta_0 + \beta_1(RentalCount) + \varepsilon
+$$
+Keterangan:
+Revenue = total pendapatan film
+RentalCount = frekuensi penyewaan film
+β0 = nilai revenue yang diprediksi ketika RentalCount = 0
+β1 = perubahan rata-rata revenue untuk setiap kenaikan 1 unit rental count
+ε = galat (error)
+
+```{r}
+model <- lm(
+revenue ~ rental_count,
+data = data_sakila
+)
+
+summary(model)
+```
+Berdasarkan hasil regresi linear, diperoleh model:
+Revenue = 0,349 + 4,153(RentalCount)
+
+Koefisien Rental Count sebesar 4,153 menunjukkan bahwa setiap peningkatan satu kali penyewaan diperkirakan akan meningkatkan revenue sebesar 4,153 satuan. Sementara itu, nilai intercept sebesar 0,349 menunjukkan revenue yang diprediksi ketika frekuensi penyewaan bernilai nol.
+$$
+R^2=
+\frac{SSR}{SST}
+$$
+Berdasarkan hasil regresi linear, diperoleh nilai R² sebesar 0,437 atau 43,7%. Hal ini menunjukkan bahwa frekuensi penyewaan mampu menjelaskan sekitar 43,7% variasi revenue, sedangkan sisanya sebesar 56,3% dipengaruhi oleh faktor lain di luar model. Selain itu, diperoleh p-value < 0,05 yang berarti frekuensi penyewaan berpengaruh signifikan terhadap revenue.
+
+<div class = "subjudul">
+Kesimpulan
+</div>
+Berdasarkan hasil analisis pada database Sakila, diperoleh gambaran bahwa aktivitas penyewaan film berkontribusi terhadap pendapatan yang dihasilkan. Hasil visualisasi menunjukkan adanya perbedaan frekuensi penyewaan dan revenue antar film yang mengindikasikan bahwa tingkat popularitas film tidak tersebar secara merata. Film dengan frekuensi penyewaan yang lebih tinggi cenderung memiliki kontribusi pendapatan yang lebih besar dibandingkan film lainnya.
+
+Hasil uji korelasi Pearson menunjukkan adanya hubungan positif yang kuat dan signifikan antara frekuensi penyewaan dan revenue dengan nilai koefisien korelasi sebesar 0,661. Selain itu, analisis regresi linear menunjukkan bahwa frekuensi penyewaan berpengaruh signifikan terhadap revenue, dengan nilai koefisien determinasi sebesar 43,7%. Dengan demikian, dapat disimpulkan bahwa semakin tinggi frekuensi penyewaan suatu film, semakin tinggi pula revenue yang dihasilkan, meskipun masih terdapat faktor lain di luar model yang turut memengaruhi pendapatan film.
